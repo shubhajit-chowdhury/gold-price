@@ -61,14 +61,31 @@ jobs:
 
       - name: Install Android SDK
         run: |
+          # Create directory for Android SDK
           mkdir -p $HOME/Android/Sdk
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip
-          unzip -q commandlinetools-linux-7302050_latest.zip -d $HOME/Android/Sdk/cmdline-tools
+      
+          # Download command line tools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip -O commandlinetools.zip
+      
+          # Unzip and set up command line tools
+          unzip -q commandlinetools.zip -d $HOME/Android/Sdk/cmdline-tools
           mv $HOME/Android/Sdk/cmdline-tools/cmdline-tools $HOME/Android/Sdk/cmdline-tools/latest
-          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --licenses || { echo "License acceptance failed"; exit 1; }
-          $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --update || { echo "SDK update failed"; exit 1; }
-          $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-30" || { echo "SDK component installation failed"; exit 1; }
+      
+          # Set ANDROID_HOME environment variable
+          echo "ANDROID_HOME=$HOME/Android/Sdk" >> $GITHUB_ENV
+          echo "PATH=\$PATH:\$ANDROID_HOME/cmdline-tools/latest/bin:\$ANDROID_HOME/platform-tools" >> $GITHUB_ENV
+      
+          # Accept licenses
+          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+      
+          # Update SDK and install required packages
+          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --update
+          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-30"
+      
+          # Clean up
+          rm commandlinetools.zip
         shell: bash
+
 
       - name: Update PATH
         run: |
