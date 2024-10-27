@@ -62,10 +62,12 @@ jobs:
       - name: Install Android SDK
         run: |
           mkdir -p $HOME/Android/Sdk
-          wget https://dl.google.com/android/repository/sdk-tools-linux-3859397.zip
-          unzip sdk-tools-linux-3859397.zip -d $HOME/Android/Sdk/
-          yes | $HOME/Android/Sdk/tools/bin/sdkmanager --licenses
-          $HOME/Android/Sdk/tools/bin/sdkmanager "platform-tools" "platforms;android-30"
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip
+          unzip -q commandlinetools-linux-7302050_latest.zip -d $HOME/Android/Sdk/cmdline-tools
+          mv $HOME/Android/Sdk/cmdline-tools/cmdline-tools $HOME/Android/Sdk/cmdline-tools/latest
+          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --licenses || { echo "License acceptance failed"; exit 1; }
+          $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --update || { echo "SDK update failed"; exit 1; }
+          $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-30" || { echo "SDK component installation failed"; exit 1; }
         shell: bash
 
       - name: Update PATH
