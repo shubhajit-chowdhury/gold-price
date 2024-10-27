@@ -1,42 +1,91 @@
-on:
-  push:
-    branches: [ main ]
+name: 'Kivy App to APK'
+description: 'Convert Kivy app to APK'
+inputs:
+  python-version:
+    description: 'Python version to use'
+    default: '3.8'
+  work-dir:
+    default: '.'
+    description: 'Working directory'
+  buildozer-cmd:
+    default: 'buildozer android debug'
+    description: 'Buildozer command to use'
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+branding:
+  color: 'green'
+  icon: 'play'
 
-      - name: Set up Java
-        uses: actions/setup-java@v2
-        with:
-          java-version: '11'  # Use the appropriate Java version
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        architecture: x64
+        python-version: ${{ inputs.python-version }}
 
-      - name: Install Buildozer and dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-pip
-          pip3 install --upgrade buildozer
-          sudo apt-get install -y openjdk-11-jdk
-          sudo apt-get install -y android-sdk
-          echo "export ANDROID_HOME=/usr/lib/android-sdk" >> $GITHUB_ENV
-          echo "export PATH=$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools:$PATH" >> $GITHUB_ENV
+    - name: Setup Java 17 required by Gradle
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
 
-      - name: Accept Android licenses
-        run: |
-          yes | sdkmanager --licenses || true
+    - name: Set JAVA_HOME
+      run: echo "JAVA_HOME=${{ env.JAVA_HOME }}" >> $GITHUB_ENV
 
-      - name: Build APK
-        uses: digreatbrian/buildozer-action@v2
-        with:
-          python-version: 3.8
-          buildozer-cmd: |
-            cd gold-price  # Replace with your actual project directory
-            buildozer -v android debug
+    - name: Prepare virtual environment
+      run: |
+        python3 -m venv venv
+        source venv/bin/activate
+        echo "Using Python==$(python --version)"
+      shell: bash
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: package
-          path: ./bin/*.apk
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y git \
+          zip \
+          unzip \
+          openjdk-17-jdk \
+          python3-pip \
+          autoconf \
+          libtool \
+          pkg-config \
+          zlib1g-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libtinfo5 \
+          cmake \
+          libffi-dev \
+          libssl-dev \
+          wget
+      shell: bash
+
+    - name: Install Android SDK
+      run: |
+        wget https://dl.google.com/android/repository/sdk-tools-linux-3859397.zip
+        unzip sdk-tools-linux-3859397.zip -d $HOME/Android/Sdk/
+        yes | $HOME/Android/Sdk/tools/bin/sdkmanager --licenses
+        $HOME/Android/Sdk/tools/bin/sdkmanager "platform-tools" "platforms;android-30"
+      shell: bash
+
+    - name: Install Python packages
+      run: |
+        export PATH=$PATH:~/.local/bin:$HOME/Android/Sdk/tools/bin:$HOME/Android/Sdk/platform-tools
+        python3 -m pip install --upgrade \
+          Cython==0.29.33 \
+          buildozer
+      shell: bash
+
+    - name: Install requirements in requirements.txt if it exists
+      run: |
+        if [ -f requirements.txt ]; then
+          python3 -m pip install -r requirements.txt
+        fi
+      shell: bash
+
+    - name: Build with Buildozer
+      run: |
+        cd ${{ inputs.work-dir }}  # Navigate to the specified working directory
+        ${{ inputs.buildozer-cmd }}
+      shell: bash
