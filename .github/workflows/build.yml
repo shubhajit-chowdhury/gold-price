@@ -22,11 +22,11 @@ jobs:
           architecture: x64
           python-version: 3.8
 
-      - name: Setup Java 17 required by Gradle
+      - name: Setup Java 8 required by Gradle
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '8'
 
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ env.JAVA_HOME }}" >> $GITHUB_ENV
