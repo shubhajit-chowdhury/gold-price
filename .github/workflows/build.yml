@@ -7,11 +7,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'  # Use the appropriate Java version
+
+      - name: Install Buildozer and dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip
+          pip3 install --upgrade buildozer
+          sudo apt-get install -y openjdk-11-jdk
+          sudo apt-get install -y android-sdk
+          echo "export ANDROID_HOME=/usr/lib/android-sdk" >> $GITHUB_ENV
+          echo "export PATH=$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools:$PATH" >> $GITHUB_ENV
+
+      - name: Accept Android licenses
+        run: |
+          yes | sdkmanager --licenses || true
+
       - name: Build APK
         uses: digreatbrian/buildozer-action@v2
         with:
           python-version: 3.8
-          buildozer-cmd: buildozer -v android debug
+          buildozer-cmd: |
+            cd gold-price  # Replace with your actual project directory
+            buildozer -v android debug
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
