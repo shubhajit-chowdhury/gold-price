@@ -1,5 +1,13 @@
 name: 'Kivy App to APK'
 description: 'Convert Kivy app to APK'
+on:
+  push:
+    branches: 
+      - main  # Change to the branch you want to trigger on
+  pull_request:
+    branches:
+      - main  # Optionally trigger on pull requests to this branch
+
 inputs:
   python-version:
     description: 'Python version to use'
